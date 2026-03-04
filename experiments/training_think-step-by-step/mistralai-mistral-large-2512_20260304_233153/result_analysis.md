@@ -42,6 +42,59 @@ Training dataset. We force the model not the reason, but 'think lound' using a c
 | 4 | 0.7551 | 0.7448 | 37 / 49 | $0.0689 | 53,209 (10,902 + 42,307) |
 | 5 | 0.7347 | 0.7249 | 36 / 49 | $0.0652 | 50,750 (10,902 + 39,848) |
 
+## Per-question results
+| Question ID | Prediction_1 | Prediction_2 | Prediction_3 | Prediction_4 | Prediction_5 | Correct Answer | Accuracy |
+|-------------|--------------|--------------|--------------|--------------|--------------|----------------|----------|
+| 23 | a | a | a | a | a | b | 0.00 |
+| 24 | b | a | c | c | a | a, b, c | 0.00 |
+| 25 | b | c | b | b | b | a | 0.00 |
+| 28 | a | a | a | a | a | a, d | 0.00 |
+| 33 | d | d | b | d | b | c | 0.00 |
+| 35 | a | b | a | b | b | c | 0.00 |
+| 39 | c | c | c | c | c | b | 0.00 |
+| 45 | d | d | d | d | d | a | 0.00 |
+| 20 | a, b, c | a, b, c | a, b, c, d | a, c, d | a, b, c | a, b, c, d | 0.20 |
+| 26 | c | c | d | c | c | d | 0.20 |
+| 7 | b | d | a | d | a | a | 0.40 |
+| 16 | b | b | c | c | c | c | 0.60 |
+| 17 | a | a | b | a | b | a | 0.60 |
+| 19 | b, d | a, c | a, c | b, d | a, c | a, c | 0.60 |
+| 46 | c | c | a | c | d | c | 0.60 |
+| 3 | d | d | c | d | d | d | 0.80 |
+| 11 | a | b | a | a | a | a | 0.80 |
+| 14 | a, b, c, d | a, b, c, d | a, b, c, d | a, b, c, d | a, b, c | a, b, c, d | 0.80 |
+| 47 | b | a | b | b | b | b | 0.80 |
+| 1 | b | b | b | b | b | b | 1.00 |
+| 2 | a, b | a, b | a, b | a, b | a, b | a, b | 1.00 |
+| 4 | b | b | b | b | b | b | 1.00 |
+| 5 | d | d | d | d | d | d | 1.00 |
+| 6 | a | a | a | a | a | a | 1.00 |
+| 8 | d | d | d | d | d | d | 1.00 |
+| 9 | a, b | a, b | a, b | a, b | a, b | a, b | 1.00 |
+| 10 | a | a | a | a | a | a | 1.00 |
+| 12 | d | d | d | d | d | d | 1.00 |
+| 13 | a, b, c | a, b, c | a, b, c | a, b, c | a, b, c | a, b, c | 1.00 |
+| 15 | a | a | a | a | a | a | 1.00 |
+| 18 | a | a | a | a | a | a | 1.00 |
+| 21 | c | c | c | c | c | c | 1.00 |
+| 22 | c | c | c | c | c | c | 1.00 |
+| 27 | b | b | b | b | b | b | 1.00 |
+| 29 | c | c | c | c | c | c | 1.00 |
+| 30 | b | b | b | b | b | b | 1.00 |
+| 31 | a | a | a | a | a | a | 1.00 |
+| 32 | c | c | c | c | c | c | 1.00 |
+| 34 | c | c | c | c | c | c | 1.00 |
+| 36 | d | d | d | d | d | d | 1.00 |
+| 37 | b | b | b | b | b | b | 1.00 |
+| 38 | b | b | b | b | b | b | 1.00 |
+| 40 | d | d | d | d | d | d | 1.00 |
+| 41 | d | d | d | d | d | d | 1.00 |
+| 42 | d | d | d | d | d | d | 1.00 |
+| 43 | a | a | a | a | a | a | 1.00 |
+| 44 | a | a | a | a | a | a | 1.00 |
+| 48 | a | a | a | a | a | a | 1.00 |
+| 49 | d | d | d | d | d | d | 1.00 |
+
 ## Cost Efficiency Analysis
 
 ### Overall Metrics
