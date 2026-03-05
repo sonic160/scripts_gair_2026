@@ -19,67 +19,6 @@ This repository supports the **[Kaggle Data Challenge: LLM Reliability Benchmark
 - 🎯 **Flexible Evaluation**: Custom evaluation scripts via `my_eval.py`
 - 💰 **Cost-Aware Scoring**: Kaggle formula that rewards efficient models
 
-### 🏗️ Repository Structure
-
-```
-.
-├── scripts/
-│   ├── batch_test_models.py      # Main entry point for benchmarking
-│   ├── my_eval.py                 # Template for your evaluation logic
-│   └── configs/                   # Configuration examples
-│       ├── training_data_zero_shot.json
-│       └── test_scenario_*.json
-├── supporting_scripts/
-│   ├── openrouter_client.py       # API client with rate limiting
-│   ├── benchmark_runner.py        # Orchestrates parallel execution
-│   └── benchmark_logger.py        # Generates reports and metrics
-└── experiments/                   # 📁 Example benchmark results
-    ├── train.csv                  # Training dataset with ground truth
-    ├── train_solution.csv         # Training labels
-    ├── test.csv                   # Test dataset (no labels)
-    ├── training_data_zero-shot/   # Benchmark results: zero-shot prompting
-    ├── training_think-step-by-step/  # Benchmark results: chain-of-thought
-    └── summary.md                 # Model comparison tables
-```
-
-**🔍 Example Results**: The `experiments/` folder contains benchmark results from various models and prompting strategies. These can help you understand expected performance levels and optimize your approach.
-
----
-
-## ⚠️ Rate Limiting & Parallelization
-
-This system includes **automatic rate limiting** and **parallel execution** to accelerate your experiments while respecting API constraints:
-
-| Setting | Default | Description |
-|---------|---------|-------------|
-| **Rate Limit** | 1 request/second | Minimum delay between API calls |
-| **Max Concurrent** | 10 instances | Maximum simultaneous API requests |
-
-### 🚀 Parallel Execution
-
-The system supports **two-level parallelism**:
-- **Model-level**: Test multiple models simultaneously
-- **Repetition-level**: Run multiple repetitions per model in parallel
-
-**⚙️ Worker Configuration**:
-```json
-{
-  "workers": 2,                    // Models to test in parallel
-  "max_workers_per_model": 5,      // Repetitions per model in parallel
-  "enable_parallel": true          // Enable parallel execution
-}
-```
-
-**⚠️ Critical Constraint**:
-```
-workers × max_workers_per_model ≤ 10
-```
-
-✅ **Valid**: `workers=2` × `max_workers_per_model=5` = **10 concurrent requests**
-❌ **Invalid**: `workers=3` × `max_workers_per_model=5` = **15 concurrent requests** (exceeds limit!)
-
----
-
 ## 🚀 Quick Start
 
 ### 📦 Installation
@@ -188,6 +127,13 @@ experiments/my_submission/
     ├── solution_kaggle.csv              # ✅ Submit this to Kaggle!
 ```
 
+### An example
+```bash
+cd scripts/
+python ./batch_test_models.py --config ./configs/testdata_generate_submission.json
+```
+This runs a test on the test data, using the configuration specified in configs/testdata_generate_submission.json!
+
 
 ## 🎯 Tuning Models on Training Dataset
 
@@ -267,6 +213,68 @@ This runs a single test question and validates:
 - ✅ Required fields are returned
 - ✅ API calls work correctly
 - ✅ Answer extraction functions properly
+
+---
+
+
+### 🏗️ Repository Structure
+
+```
+.
+├── scripts/
+│   ├── batch_test_models.py      # Main entry point for benchmarking
+│   ├── my_eval.py                 # Template for your evaluation logic
+│   └── configs/                   # Configuration examples
+│       ├── training_data_zero_shot.json
+│       └── test_scenario_*.json
+├── supporting_scripts/
+│   ├── openrouter_client.py       # API client with rate limiting
+│   ├── benchmark_runner.py        # Orchestrates parallel execution
+│   └── benchmark_logger.py        # Generates reports and metrics
+└── experiments/                   # 📁 Example benchmark results
+    ├── train.csv                  # Training dataset with ground truth
+    ├── train_solution.csv         # Training labels
+    ├── test.csv                   # Test dataset (no labels)
+    ├── training_data_zero-shot/   # Benchmark results: zero-shot prompting
+    ├── training_think-step-by-step/  # Benchmark results: chain-of-thought
+    └── summary.md                 # Model comparison tables
+```
+
+**🔍 Example Results**: The `experiments/` folder contains benchmark results from various models and prompting strategies. These can help you understand expected performance levels and optimize your approach.
+
+---
+
+## ⚠️ Rate Limiting & Parallelization
+
+This system includes **automatic rate limiting** and **parallel execution** to accelerate your experiments while respecting API constraints:
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| **Rate Limit** | 1 request/second | Minimum delay between API calls |
+| **Max Concurrent** | 10 instances | Maximum simultaneous API requests |
+
+### 🚀 Parallel Execution
+
+The system supports **two-level parallelism**:
+- **Model-level**: Test multiple models simultaneously
+- **Repetition-level**: Run multiple repetitions per model in parallel
+
+**⚙️ Worker Configuration**:
+```json
+{
+  "workers": 2,                    // Models to test in parallel
+  "max_workers_per_model": 5,      // Repetitions per model in parallel
+  "enable_parallel": true          // Enable parallel execution
+}
+```
+
+**⚠️ Critical Constraint**:
+```
+workers × max_workers_per_model ≤ 10
+```
+
+✅ **Valid**: `workers=2` × `max_workers_per_model=5` = **10 concurrent requests**
+❌ **Invalid**: `workers=3` × `max_workers_per_model=5` = **15 concurrent requests** (exceeds limit!)
 
 ---
 
