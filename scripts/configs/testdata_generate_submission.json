@@ -1,6 +1,5 @@
 {
   "models": [
-    "mistralai/mistral-large-2512",
     "qwen/qwen3-235b-a22b-2507"
   ],
   "results_path": "../experiments/test_data",
