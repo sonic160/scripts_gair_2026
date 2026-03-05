@@ -57,7 +57,7 @@ def evaluate_question(
     """
     # Get prompt from config (loaded from system_prompt.md)
     prompt = """
-    You will be given a CRE exam question. Think step-by-stsep and choose the correct answer(s). Limit your answer to 600 words maximum. At the end of your response, start a new line and output your answer as a JSON object with the following format:\n{\n\"answer\": [\"a\"] or [\"a\", \"b\", \"c\"] for multiple answers\n}\nFor example: {\"answer\": [\"a\"]} or {\"answer\": [\"a\", \"b\", \"c\"]}\n
+    You will be given a CRE exam question. Do not reason, and answer directly. Limit your answer to 600 words maximum. At the end of your response, start a new line and output your answer as a JSON object with the following format:\n{\n\"answer\": [\"a\"] or [\"a\", \"b\", \"c\"] for multiple answers\n}\nFor example: {\"answer\": [\"a\"]} or {\"answer\": [\"a\", \"b\", \"c\"]}\n Output only the json, and nothing else.
  """
 
     # Get usage summary before API call
