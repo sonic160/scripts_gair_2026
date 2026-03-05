@@ -137,7 +137,8 @@ def evaluate_question(
     # 2. Extract answer from response
     # 3. Return required fields
 ```
-You can use `scripts/my_eval.py` as a template.
+
+**You can use `scripts/my_eval.py` as a template.**
 
 **📝 Answer Format Requirements**:
 - Single-answer: `"a"` (case-insensitive)
@@ -146,14 +147,14 @@ You can use `scripts/my_eval.py` as a template.
 
 ### Step 2: Create Test Mode Config
 
-Create `submission_config.json`:
+Create `submission_config.json` and put it under './configs/':
 
 ```json
 {
   "models": ["google/gemini-3-flash-preview"],
   "results_path": "../experiments/my_submission",
   "dataset_path": "../experiments/test.csv",
-  "solution_path": "../experiments/dummy_solution.csv",
+  "solution_path": "",
   "eval_script_path": "./my_eval.py",
   "temperature": 1.0,
   "max_reasoning_tokens": 600,
@@ -170,15 +171,22 @@ Create `submission_config.json`:
 
 **🔑 Key Settings for Test Mode**:
 - `"testing_mode": true` - Skips accuracy calculation (no ground truth)
-- `"num_repetitions": 5` - Single run for submission
-- `"solution_path"` - Can point to a dummy file (not used in test mode)
+- `"num_repetitions": 5` - five runs for submission
+- `enable_parallel": faule` - Desabled parallel execution. If using parallization, set it to "true"
+- `"workers": 1` - Start n process that runs in parallel. max 2.
+- `"max_workers_per_model": 1` - Number of parallel runs per process. max 5.
 
 ### Step 3: Run Benchmark
 
 ```bash
 cd scripts
-python batch_test_models.py --config submission_config.json
+python batch_test_models.py --config ./configs/testdata_generate_submission.json
 ```
+
+This is a sample run of the benchmark. You need:
+- create your own solution function based on `scripts/my_eval.py`
+- create your own config file based on `configs/testdata_generate_submission.json`
+- Run your own benchmark.
 
 ### Step 4: Locate Submission File
 

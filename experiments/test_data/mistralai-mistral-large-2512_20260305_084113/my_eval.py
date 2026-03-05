@@ -32,6 +32,79 @@ import json
 from pathlib import Path
 
 
+def evaluate_question(
+    question: str,
+    client,  # OpenRouterClient instance
+    model: str,
+    config: dict
+) -> dict:
+    """
+    Evaluate a single question with single LLM call.
+
+    Args:
+        question: Question text
+        client: OpenRouterClient instance (same instance across all calls)
+        model: Model name
+        config: Full config dict (includes system_prompt loaded from system_prompt.md)
+
+    Returns:
+        {
+            'raw_response': str,        # REQUIRED
+            'extracted_answer': str,    # REQUIRED
+            'usage': dict,              # REQUIRED
+            'metadata': dict            # OPTIONAL
+        }
+    """
+    # Get prompt from config (loaded from system_prompt.md)
+    prompt = """
+    You will be given a CRE exam question. Think step-by-stsep and choose the correct answer(s). Limit your answer to 600 words maximum. At the end of your response, start a new line and output your answer as a JSON object with the following format:\n{\n\"answer\": [\"a\"] or [\"a\", \"b\", \"c\"] for multiple answers\n}\nFor example: {\"answer\": [\"a\"]} or {\"answer\": [\"a\", \"b\", \"c\"]}\n
+ """
+
+    # Get usage summary before API call
+    usage_before = client.get_usage_summary()
+
+    # Single LLM call
+    response = client.chat_completion(
+        model=model,
+        messages=[
+            {"role": "system", "content": prompt},
+            {"role": "user", "content": question}
+        ],
+        temperature=config.get('temperature', 1.0),
+        max_tokens=config.get('max_tokens'),
+        max_reasoning_tokens=config.get('max_reasoning_tokens')
+    )
+
+    # Get usage summary after API call
+    usage_after = client.get_usage_summary()
+
+    raw_response = response['choices'][0]['message']['content']
+
+    # Extract answer from raw response
+    parsed = extract_answer(raw_response)
+
+    # Calculate per-question usage as difference
+    total_usage = {
+        'cost': usage_after['cumulative_cost'] - usage_before['cumulative_cost'],
+        'total_tokens': usage_after['total_tokens'] - usage_before['total_tokens'],
+        'prompt_tokens': usage_after['total_prompt_tokens'] - usage_before['total_prompt_tokens'],
+        'completion_tokens': usage_after['total_completion_tokens'] - usage_before['total_completion_tokens'],
+        'reasoning_tokens': usage_after['total_reasoning_tokens'] - usage_before['total_reasoning_tokens'],
+        'cached_tokens': usage_after['total_cached_tokens'] - usage_before['total_cached_tokens'],
+        'request_count': usage_after['request_count'] - usage_before['request_count']
+    }
+
+    return {
+        'raw_response': raw_response,
+        'extracted_answer': parsed['answer'],
+        'usage': total_usage,
+        'metadata': {
+            'model': model,
+            'finish_reason': response['choices'][0].get('finish_reason')
+        }
+    }
+
+
 def extract_answer(response_content: str) -> dict:
     """
     Extract answer and reasoning from JSON response with fallback to regex.
@@ -144,79 +217,6 @@ def extract_answer(response_content: str) -> dict:
             result["answer"] = ', '.join([s.lower() for s in standalone[:5]])
 
     return result
-
-
-def evaluate_question(
-    question: str,
-    client,  # OpenRouterClient instance
-    model: str,
-    config: dict
-) -> dict:
-    """
-    Evaluate a single question with single LLM call.
-
-    Args:
-        question: Question text
-        client: OpenRouterClient instance (same instance across all calls)
-        model: Model name
-        config: Full config dict (includes system_prompt loaded from system_prompt.md)
-
-    Returns:
-        {
-            'raw_response': str,        # REQUIRED
-            'extracted_answer': str,    # REQUIRED
-            'usage': dict,              # REQUIRED
-            'metadata': dict            # OPTIONAL
-        }
-    """
-    # Get prompt from config (loaded from system_prompt.md)
-    prompt = """
-    You will be given a CRE exam question. Think step-by-stsep and choose the correct answer(s). At the end of your response, start a new line and output your answer as a JSON object with the following format:\n{\n\"answer\": [\"a\"] or [\"a\", \"b\", \"c\"] for multiple answers\n}\nFor example: {\"answer\": [\"a\"]} or {\"answer\": [\"a\", \"b\", \"c\"]}\n
- """
-
-    # Get usage summary before API call
-    usage_before = client.get_usage_summary()
-
-    # Single LLM call
-    response = client.chat_completion(
-        model=model,
-        messages=[
-            {"role": "system", "content": prompt},
-            {"role": "user", "content": question}
-        ],
-        temperature=config.get('temperature', 1.0),
-        max_tokens=config.get('max_tokens'),
-        max_reasoning_tokens=config.get('max_reasoning_tokens')
-    )
-
-    # Get usage summary after API call
-    usage_after = client.get_usage_summary()
-
-    raw_response = response['choices'][0]['message']['content']
-
-    # Extract answer from raw response
-    parsed = extract_answer(raw_response)
-
-    # Calculate per-question usage as difference
-    per_question_usage = {
-        'cost per run': usage_after['cumulative_cost'] - usage_before['cumulative_cost'],
-        'token per run': usage_after['total_tokens'] - usage_before['total_tokens'],
-        'prompt_tokens': usage_after['total_prompt_tokens'] - usage_before['total_prompt_tokens'],
-        'completion_tokens': usage_after['total_completion_tokens'] - usage_before['total_completion_tokens'],
-        'reasoning_tokens': usage_after['total_reasoning_tokens'] - usage_before['total_reasoning_tokens'],
-        'cached_tokens': usage_after['total_cached_tokens'] - usage_before['total_cached_tokens'],
-        'request_count': usage_after['request_count'] - usage_before['request_count'],
-    }
-
-    return {
-        'raw_response': raw_response,
-        'extracted_answer': parsed['answer'],
-        'usage': per_question_usage,
-        'metadata': {
-            'model': model,
-            'finish_reason': response['choices'][0].get('finish_reason')
-        }
-    }
 
 
 if __name__ == '__main__':

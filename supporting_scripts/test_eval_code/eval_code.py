@@ -1,5 +1,5 @@
 """
-Average accuracy over five predictions.
+Average kaggle score over five predictions.
 """
 
 import pandas as pd
@@ -35,8 +35,9 @@ def score(solution: pd.DataFrame, submission: pd.DataFrame, row_id_column_name: 
     ...     submission[column_name] = ['a']*num_rows
     >>> solution = pd.DataFrame(data)
     >>> solution['answer'] = ['a']*num_rows
+    >>> submission.loc[:, 'Average cost per run'] = 1
     >>> _ = score(solution.copy(), submission.copy(), 'question_id')
-    Mean accuracy: 1.0
+    Mean accuracy (5 predictions): 1.0
     '''
 
     if row_id_column_name in solution.columns:
@@ -83,11 +84,17 @@ def score(solution: pd.DataFrame, submission: pd.DataFrame, row_id_column_name: 
 
 
 if __name__ == '__main__':
-    solution_path = 'scripts_gair_2026/devel/experiments/test_parallel/test_3_questions_solution.csv'
-    submission_path = 'scripts_gair_2026/devel/experiments/test_parallel/test_scenario_2/google-gemini-3-flash-preview_20260303_142435/solution_kaggle.csv'
+    solution_path = "C:/Users/zzg_s/OneDrive - CentraleSupelec/Code/Python/llm_reliability_engineering/eval_baseline/create_dataset_data_challenge_2026/dataset_kaggle_mcq/solution.csv"
+    submission_path = "C:/Users/zzg_s/OneDrive - CentraleSupelec/Code/Python/scripts_gair_2026/experiments/test_data/mistralai-mistral-large-2512_20260305_084113/solution_kaggle.csv"
 
     solution = pd.read_csv(solution_path)
     submission = pd.read_csv(submission_path)
 
-    print(f'Kaggle score: {score(solution, submission, 'question_id')}')
+    solution_public = solution[solution['Usage']=='Public']
+    solution_private = solution[solution['Usage']=='Private']
+    submission_public = submission[solution['Usage']=='Public']
+    submission_private = submission[solution['Usage']=='Private']
+
+    print(f'Kaggle score (Public): {score(solution_public, submission_public, 'question_id')}')
+    print(f'Kaggle score (Private): {score(solution_private, submission_private, 'question_id')}')
     

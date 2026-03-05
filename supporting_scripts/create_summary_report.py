@@ -280,6 +280,7 @@ def parse_result_analysis(md_path: Path) -> Optional[Dict]:
 def create_solution_kaggle_csv(subfolder_path: Path, avg_cost_per_run: float) -> bool:
     """
     Create solution_kaggle.csv by copying solution.csv and adding 'Average cost per run' column.
+    Replaces any NaN values with 'no solution or nan generated'.
     
     Args:
         subfolder_path: Path to the model subfolder
@@ -311,6 +312,12 @@ def create_solution_kaggle_csv(subfolder_path: Path, avg_cost_per_run: float) ->
             writer.writeheader()
             
             for row in rows:
+                # Check for NaN or empty values in prediction columns and replace them
+                for key, value in row.items():
+                    # Check if value is NaN-like (empty, 'nan', 'NaN', etc.)
+                    if value == '' or value is None or (isinstance(value, str) and value.strip().lower() in ('nan', 'none', 'null')):
+                        row[key] = 'no solution or nan generated'
+                
                 row['Average cost per run'] = f"{avg_cost_per_run:.6f}"
                 writer.writerow(row)
         
