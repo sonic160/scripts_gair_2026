@@ -82,6 +82,7 @@ def evaluate_question(
 
     # Extract answer from raw response
     parsed = extract_answer(raw_response)
+    extract_answer = parsed['answer']
 
     # Calculate per-question usage as difference
     total_usage = {
@@ -96,7 +97,7 @@ def evaluate_question(
 
     return {
         'raw_response': raw_response,
-        'extracted_answer': parsed['answer'],
+        'extracted_answer': extract_answer,
         'usage': total_usage,
         'metadata': {
             'model': model,
