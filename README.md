@@ -1,198 +1,369 @@
-# LLM Reliability Benchmark System
+# 🏆 LLM Reliability Benchmark System
 
-Concurrent benchmark system for evaluating LLM performance on exam questions with Kaggle-style scoring.
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Kaggle Challenge](https://img.shields.io/badge/Kaggle-Data_Challenge-orange.svg)](https://www.kaggle.com/t/1b59fd489c784c558a981f68327644cf)
 
-## Quick Start
+> This repository contains a framework to help you prepare the data challenge for the course Generative AI for Risk and Reliability in Centralesupelec, France. You will find:
+- A framework to parallelize model testing
+- A pipeline to help you run the test and generate the submission file
 
-### 1. With Ground Truth (Evaluation Mode)
+---
 
-Create a config file (e.g., `my_config.json`):
+## 📖 Overview
+
+This repository supports the **[Kaggle Data Challenge: LLM Reliability Benchmark](https://www.kaggle.com/t/1b59fd489c784c558a981f68327644cf)**, providing a robust framework for:
+
+- ⚡ **Parallel Execution**: Accelerate experiments with concurrent model testing
+- 📊 **Comprehensive Metrics**: Track accuracy, cost, tokens, and Kaggle scores
+- 🎯 **Flexible Evaluation**: Custom evaluation scripts via `my_eval.py`
+- 💰 **Cost-Aware Scoring**: Kaggle formula that rewards efficient models
+
+### 🏗️ Repository Structure
+
+```
+.
+├── scripts/
+│   ├── batch_test_models.py      # Main entry point for benchmarking
+│   ├── my_eval.py                 # Template for your evaluation logic
+│   └── configs/                   # Configuration examples
+│       ├── training_data_zero_shot.json
+│       └── test_scenario_*.json
+├── supporting_scripts/
+│   ├── openrouter_client.py       # API client with rate limiting
+│   ├── benchmark_runner.py        # Orchestrates parallel execution
+│   └── benchmark_logger.py        # Generates reports and metrics
+└── experiments/                   # 📁 Example benchmark results
+    ├── train.csv                  # Training dataset with ground truth
+    ├── train_solution.csv         # Training labels
+    ├── test.csv                   # Test dataset (no labels)
+    ├── training_data_zero-shot/   # Benchmark results: zero-shot prompting
+    ├── training_think-step-by-step/  # Benchmark results: chain-of-thought
+    └── summary.md                 # Model comparison tables
+```
+
+**🔍 Example Results**: The `experiments/` folder contains benchmark results from various models and prompting strategies. These can help you understand expected performance levels and optimize your approach.
+
+---
+
+## ⚠️ Rate Limiting & Parallelization
+
+This system includes **automatic rate limiting** and **parallel execution** to accelerate your experiments while respecting API constraints:
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| **Rate Limit** | 1 request/second | Minimum delay between API calls |
+| **Max Concurrent** | 10 instances | Maximum simultaneous API requests |
+
+### 🚀 Parallel Execution
+
+The system supports **two-level parallelism**:
+- **Model-level**: Test multiple models simultaneously
+- **Repetition-level**: Run multiple repetitions per model in parallel
+
+**⚙️ Worker Configuration**:
+```json
+{
+  "workers": 2,                    // Models to test in parallel
+  "max_workers_per_model": 5,      // Repetitions per model in parallel
+  "enable_parallel": true          // Enable parallel execution
+}
+```
+
+**⚠️ Critical Constraint**:
+```
+workers × max_workers_per_model ≤ 10
+```
+
+✅ **Valid**: `workers=2` × `max_workers_per_model=5` = **10 concurrent requests**
+❌ **Invalid**: `workers=3` × `max_workers_per_model=5` = **15 concurrent requests** (exceeds limit!)
+
+---
+
+## 🚀 Quick Start
+
+### 📦 Installation
+
+```bash
+# Clone the repository
+git clone <repository-url>
+cd scripts_gair_2026
+
+# Install dependencies
+pip install pandas tqdm requests
+
+# Set your OpenRouter API key
+export OPENROUTER_API_KEY=your_key_here
+```
+
+---
+
+## 📤 Prepare Submission File (Test Mode)
+
+Use **test mode** to generate submission files for the Kaggle competition when you don't have ground truth labels.
+
+### Step 1: Create Your Evaluation Script
+
+All your custom logic **must** be implemented in `my_eval.py`. The system will call `evaluate_question()` for each question.
+
+**Required Interface**:
+
+```python
+def evaluate_question(
+    question: str,
+    client,  # OpenRouterClient instance
+    model: str,
+    config: dict
+) -> dict:
+    """
+    Evaluate a single question.
+
+    Args:
+        question: Question text from dataset
+        client: OpenRouterClient for API calls
+        model: Model identifier (e.g., "openai/gpt-4o-mini")
+        config: Configuration dictionary
+
+    Returns:
+        {
+            'raw_response': str,        # Complete LLM response (for debugging)
+            'extracted_answer': str,    # Final answer (becomes prediction)
+            'usage': dict,              # Per-question API usage metrics
+            'metadata': dict            # Optional: additional info
+        }
+    """
+    # Your custom logic here
+    # 1. Call LLM via client.chat_completion()
+    # 2. Extract answer from response
+    # 3. Return required fields
+```
+You can use `scripts/my_eval.py` as a template.
+
+**📝 Answer Format Requirements**:
+- Single-answer: `"a"` (case-insensitive)
+- Multiple-answer: `"a, b, c"` (comma-separated, with a space after each comma)
+- The system normalizes answers before comparison
+
+### Step 2: Create Test Mode Config
+
+Create `submission_config.json`:
 
 ```json
 {
-  "models": ["google/gemini-3-flash-preview", "openai/gpt-4.1-mini"],
-  "results_path": "../experiments/my_experiment",
+  "models": ["google/gemini-3-flash-preview"],
+  "results_path": "../experiments/my_submission",
   "dataset_path": "../experiments/test.csv",
-  "solution_path": "../experiments/solution.csv",
+  "solution_path": "../experiments/dummy_solution.csv",
   "eval_script_path": "./my_eval.py",
   "temperature": 1.0,
   "max_reasoning_tokens": 600,
+  "max_tokens": null,
+  "num_repetitions": 1,
+  "testing_mode": true,
+  "workers": 1,
+  "enable_parallel": false,
+  "max_workers_per_model": 1,
+  "rate_limit_seconds": 1.0,
+  "message": "Kaggle submission"
+}
+```
+
+**🔑 Key Settings for Test Mode**:
+- `"testing_mode": true` - Skips accuracy calculation (no ground truth)
+- `"num_repetitions": 5` - Single run for submission
+- `"solution_path"` - Can point to a dummy file (not used in test mode)
+
+### Step 3: Run Benchmark
+
+```bash
+cd scripts
+python batch_test_models.py --config submission_config.json
+```
+
+### Step 4: Locate Submission File
+
+```
+experiments/my_submission/
+└── model-name_timestamp/
+    ├── solution_kaggle.csv              # ✅ Submit this to Kaggle!
+```
+
+
+## 🎯 Tuning Models on Training Dataset
+
+Use the training dataset (`train.csv` + `train_solution.csv`) to evaluate and optimize your approach before submitting.
+
+### Step 1: Create Training Config
+
+Create `training_config.json`:
+
+```json
+{
+  "models": ["google/gemini-3-flash-preview", "openai/gpt-4o-mini"],
+  "results_path": "../experiments/my_training",
+  "dataset_path": "../experiments/train.csv",
+  "solution_path": "../experiments/train_solution.csv",
+  "eval_script_path": "./my_eval.py",
+  "temperature": 1.0,
+  "max_reasoning_tokens": 600,
+  "max_tokens": null,
   "num_repetitions": 5,
   "testing_mode": false,
   "workers": 2,
   "enable_parallel": true,
   "max_workers_per_model": 5,
   "rate_limit_seconds": 1.0,
-  "message": "Test run with ground truth"
+  "message": "Training evaluation with ground truth"
 }
 ```
 
-Run the benchmark:
+**🔑 Key Settings for Training**:
+- `"testing_mode": false` - Calculates accuracy using `train_solution.csv`
+- `"num_repetitions": 5` - Multiple runs for statistical significance
+- `"workers": 2` × `"max_workers_per_model": 5` = 10 concurrent requests ✅
+
+### Step 2: Run Training Evaluation
 
 ```bash
-cd devel/scripts
-python batch_test_models.py --config my_config.json
+cd scripts
+python batch_test_models.py --config training_config.json
 ```
 
-**Worker Configuration:**
-- `workers`: Number of models to test in parallel (model-level)
-- `max_workers_per_model`: Number of repetitions to run in parallel per model (repetition-level)
-- **Total concurrent API calls** = `workers` × `max_workers_per_model`
-- **⚠️ Do NOT exceed 10 concurrent instances** to avoid rate limits
-  - Example: `workers=2` × `max_workers_per_model=5` = **10 concurrent requests** ✅
-  - Example: `workers=3` × `max_workers_per_model=5` = **15 concurrent requests** ❌ (too many)
+### Step 3: Analyze Results
 
-**Output Structure:**
+The system generates comprehensive reports:
+
 ```
-my_experiment/
-├── model-name_1_timestamp/           # Model 1 folder
-│   ├── config.json
-│   ├── my_eval.py
-│   ├── run_1_results.json
+experiments/my_training/
+├── model-name_1_timestamp/
+│   ├── result_analysis.md           # ⭐ Accuracy, Kaggle score, cost
+│   ├── wrong_answers.md             # Detailed error analysis
+│   ├── run_1_results.json          # Raw responses per run
 │   ├── run_2_results.json
-│   ├── ...
-│   ├── solution.csv                  # Predictions for submission
-│   ├── solution_kaggle.csv            # With cost column for Kaggle
-│   ├── result_analysis.md             # Accuracy, Kaggle score, cost, tokens
-│   └── wrong_answers.md               # Detailed error analysis
-├── model-name_2_timestamp/           # Model 2 folder
 │   └── ...
-└── summary.md                        # ⭐ Model comparison table
+└── summary.md                       # ⭐ Model comparison table
 ```
 
-**summary.md Structure:**
+**📊 Model Comparison** (`summary.md`):
 ```markdown
-# Model Comparison Report
-
-## Configuration
-- Models Tested: 2
-- Repetitions: 5
-- Temperature: 1.0
-- Max Reasoning Tokens: 600
-
 ## Results Summary
-| Rank | Model | Accuracy | Kaggle Score | Total Cost ($) | Total Tokens | Avg Cost/Run ($) |
-|------|-------|----------|--------------|----------------|--------------|------------------|
-| 1 | google-gemini-3-flash-preview | 0.8693 ± 0.0131 | 0.8402 | $1.1487 | 434,366 | $0.230 |
-| 2 | openai-gpt-4.1-mini | 0.7867 ± 0.0223 | 0.7798 | $0.2279 | 189,855 | $0.046 |
+
+| Rank | Model | Accuracy | Kaggle Score | Total Cost ($) | Avg Cost/Run ($) |
+|------|-------|----------|--------------|----------------|------------------|
+| 1 | google-gemini-3-flash-preview | 0.8693 ± 0.0131 | 0.8402 | $1.1487 | $0.230 |
+| 2 | openai-gpt-4o-mini | 0.7867 ± 0.0223 | 0.7798 | $0.2279 | $0.046 |
 ```
 
-**Kaggle Score Formula:** `kaggle = max(0, min(1.0, accuracy - 0.15 × avg_cost_per_run))`
-- Balances accuracy vs. cost (lower cost = higher score)
-- Encourages cost-efficient model selection
+### 🧪 Testing Your Evaluation Script
 
-### 2. Without Ground Truth (Submission Mode)
+Before running full benchmarks, test your `my_eval.py` locally:
 
-Create a config for competition submission:
+```bash
+cd scripts
+python my_eval.py
+```
 
+This runs a single test question and validates:
+- ✅ Required fields are returned
+- ✅ API calls work correctly
+- ✅ Answer extraction functions properly
+
+---
+
+## 🧮 Kaggle Scoring Formula
+
+The competition uses a cost-aware scoring metric:
+
+```
+kaggle_score = max(0, min(1.0, accuracy - 0.15 × avg_cost_per_run))
+```
+
+**💡 Strategy Implications**:
+- **Higher accuracy** → Better score
+- **Lower cost** → Better score (0.15× cost penalty)
+- **Sweet spot**: Balance quality vs. efficiency
+- **Cost cap**: Scores drop to 0 if `avg_cost_per_run > 0.30`
+
+---
+
+## 📁 Configuration Reference
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `models` | `list[str]` | OpenRouter model identifiers |
+| `results_path` | `str` | Output directory for results |
+| `dataset_path` | `str` | Path to questions CSV |
+| `solution_path` | `str` | Path to ground truth (training only) |
+| `eval_script_path` | `str` | Path to your `my_eval.py` |
+| `temperature` | `float` | LLM sampling temperature |
+| `max_tokens` | `int?` | Max completion tokens |
+| `max_reasoning_tokens` | `int?` | Max reasoning tokens |
+| `num_repetitions` | `int` | Number of independent runs |
+| `testing_mode` | `bool` | Skip accuracy calc (for submission) |
+| `workers` | `int` | Parallel models (≤ 10 / max_workers_per_model) |
+| `enable_parallel` | `bool` | Enable parallel repetition execution |
+| `max_workers_per_model` | `int` | Parallel reps per model |
+| `rate_limit_seconds` | `float` | Delay between API calls (default: 1.0) |
+| `message` | `str?` | Optional description for reports |
+
+---
+
+## 🛠️ Advanced Features
+
+### 🔄 Custom Evaluation Scripts
+
+Modify `my_eval.py` to implement:
+- Different prompting strategies (few-shot, chain-of-thought, etc.)
+- Custom answer extraction logic
+- Multi-step reasoning workflows
+- Ensemble methods across multiple runs
+
+### 📊 Usage Tracking
+
+The system automatically tracks:
+- **Cost**: Per-question and cumulative
+- **Tokens**: Prompt, completion, reasoning, cached
+- **Requests**: API call count
+- **Performance metrics**: Accuracy, Kaggle score, timing
+
+### 🎨 Parallelization Strategies
+
+**Single Model, Multiple Repetitions** (Fast):
 ```json
 {
   "models": ["google/gemini-3-flash-preview"],
-  "results_path": "../experiments/kaggle_submission",
-  "dataset_path": "../datasets/test.csv",
-  "solution_path": "../datasets/dummy_solution.csv",
-  "eval_script_path": "./my_eval.py",
-  "temperature": 1.0,
-  "max_reasoning_tokens": 600,
-  "num_repetitions": 1,
-  "testing_mode": true,
+  "num_repetitions": 10,
   "workers": 1,
-  "enable_parallel": false,
-  "message": "Kaggle submission"
+  "max_workers_per_model": 10
 }
 ```
 
-**Key differences:**
-- `testing_mode: true` - Skips accuracy calculation (no ground truth needed)
-- `num_repetitions: 1` - Single run for submission
-- `solution_path` - Can be a dummy file (not used when testing_mode=true)
-
-Run:
-
-```bash
-python batch_test_models.py --config kaggle_config.json
+**Multiple Models, Single Repetition** (Comparison):
+```json
+{
+  "models": ["model1", "model2", "model3"],
+  "num_repetitions": 1,
+  "workers": 3,
+  "max_workers_per_model": 1
+}
 ```
 
-**Output:**
-```
-kaggle_submission/
-└── model-name_timestamp/
-    ├── solution.csv              # ⭐ Submit this to Kaggle
-    └── solution_kaggle.csv       # With average cost per run column
-```
+---
 
-`solution_kaggle.csv` format:
-```csv
-question_id,prediction_1,Average cost per run
-1,a,0.05
-2,b,0.05
-3,c,0.05
-...
-```
+## 🤝 Contributing
 
-This file is ready for direct submission to Kaggle competition!
+This is part of the **LLM Reliability Engineering** project. Contributions welcome!
 
-## Configuration Files
+---
 
-Pre-configured examples in `devel/scripts/configs/`:
-
-| Config | Models | Purpose |
-|--------|--------|---------|
-| `training_data_zero_shot.json` | 11 models | Full training evaluation |
-| `test_scenario_1.json` | 1 model | Quick single-model test |
-| `test_scenario_3.json` | 3 models | Multi-model parallel test |
-
-Usage:
-```bash
-python batch_test_models.py                           # Use default config
-python batch_test_models.py --config configs/test_scenario_1.json
-```
-
-## Architecture
-
-**Key Components:**
-1. **OpenRouterClient** - LLM client with usage tracking and rate limiting
-2. **BenchmarkRunner** - Orchestrates parallel benchmark execution
-3. **BenchmarkLogger** - Generates reports and tracks metrics
-
-**Data Flow:**
-```
-JSON Config → batch_test_models.py → BenchmarkRunner
-  ↓
-For each model (parallel via ThreadPoolExecutor):
-  ↓
-  For each repetition (parallel via ThreadPoolExecutor):
-    ↓
-    OpenRouterClient.chat_completion() → Rate-limited API calls
-    ↓
-  BenchmarkLogger → JSON files + CSV + Markdown reports
-```
-
-**Rate Limiting:**
-- Global `RateLimiter` shared across all workers
-- Respects `rate_limit_seconds` delay between API calls
-- Prevents API overload even with high parallelism
-
-## Output Files
-
-**Per-Run Files:**
-- `run_N_results.json` - Raw LLM responses and metadata
-
-**Per-Model Files:**
-- `solution.csv` - Predictions (prediction_1 to prediction_N columns)
-- `solution_kaggle.csv` - With 'Average cost per run' column for Kaggle
-- `result_analysis.md` - Detailed accuracy, Kaggle score, cost analysis
-- `wrong_answers.md` - Error analysis grouped by run
-
-**Aggregated Files:**
-- `summary.md` - Model comparison table (ranked by Kaggle score)
-
-## Requirements
-
-- Python 3.8+
-- pandas, tqdm
-- OpenRouter API key: `export OPENROUTER_API_KEY=your_key`
-
-## License
+## 📄 License
 
 Part of LLM Reliability Engineering project.
+
+---
+
+## 🙏 Acknowledgments
+
+- Built for the [Kaggle Data Challenge](https://www.kaggle.com/t/1b59fd489c784c558a981f68327644cf)
+- Uses [OpenRouter API](https://openrouter.ai/) for multi-model access
+- Implements cost-aware evaluation inspired by real-world LLM deployment constraints
